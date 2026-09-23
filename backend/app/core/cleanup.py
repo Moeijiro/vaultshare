@@ -1,10 +1,10 @@
 import asyncio
 import datetime
 import logging
-import os
 from sqlalchemy import select, or_
 from app.db.session import AsyncSessionLocal
 from app.db.models import Share
+from app.api.v1.endpoints.shares import shred_file
 
 logger = logging.getLogger(__name__)
 
@@ -28,17 +28,8 @@ async def cleanup_expired_shares():
                 for share in expired_shares:
                     share.is_consumed = True
                     share.encrypted_payload = None
-                    if share.file_storage_path and os.path.exists(share.file_storage_path):
-                        try:
-                            # Secure overwrite before delete
-                            size = os.path.getsize(share.file_storage_path)
-                            with open(share.file_storage_path, "wb") as f:
-                                f.write(b"\x00" * size)
-                            os.remove(share.file_storage_path)
-                        except Exception as e:
-                            logger.error(f"Error shredding file {share.file_storage_path}: {e}")
-                        share.file_storage_path = None
-                
+                    shred_file(share.file_storage_path)
+                    share.file_storage_path = None
                 await db.commit()
         except Exception as e:
             logger.error(f"Error in background cleanup task: {e}")
