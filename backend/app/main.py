@@ -4,7 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from app.core.config import settings
-from app.api.v1.api import api_router
+from app.api.routes import security_spec, shares, users
 from app.db.session import engine, Base
 from app.core.cleanup import cleanup_expired_shares
 
@@ -45,7 +45,9 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization"],
 )
 
-app.include_router(api_router, prefix=settings.API_V1_STR)
+app.include_router(shares.router, prefix=f"{settings.API_V1_STR}/shares", tags=["shares"])
+app.include_router(users.router, prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
+app.include_router(security_spec.router, prefix=f"{settings.API_V1_STR}/security", tags=["security"])
 
 @app.get("/health", tags=["system"])
 async def health_check():

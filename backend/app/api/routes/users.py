@@ -4,10 +4,10 @@ from app.core.config import settings
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.db.session import get_db
-from app.db.models import User
+from app.models import User
 from app.schemas.user import UserRegister, UserLogin, UserOut, TokenOut
 from app.core.auth import DUMMY_PASSWORD_HASH, create_access_token, get_password_hash, rate_limit, verify_user_password
-from app.core.deps import get_current_user
+from app.api.deps import get_current_user
 
 router = APIRouter()
 

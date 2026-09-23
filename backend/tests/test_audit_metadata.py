@@ -1,7 +1,7 @@
 import pytest
 import datetime
 from sqlalchemy import select
-from app.db.models import AccessLog
+from app.models import AccessLog
 from app.core.security import hash_token
 
 @pytest.mark.asyncio

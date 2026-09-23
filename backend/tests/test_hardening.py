@@ -6,7 +6,7 @@ import pytest
 from sqlalchemy import select
 
 from app.core.config import settings
-from app.db.models import Share
+from app.models import Share
 from tests.conftest import TestingSessionLocal
 
 
@@ -127,3 +127,13 @@ async def test_owners_can_revoke_from_the_dashboard_by_id(client):
     assert (await client.delete(f"/api/v1/shares/mine/{share_id}", headers=mallory)).status_code == 404
     assert (await client.delete(f"/api/v1/shares/mine/{share_id}", headers=alice)).status_code == 200
     assert (await client.post(f"/api/v1/shares/{token}/unlock", json={})).status_code == 404
+
+
+def test_empty_keys_are_refused_instead_of_becoming_well_known_ones():
+    from pydantic import ValidationError
+
+    from app.core.config import Settings
+
+    for field in ("VAULT_MASTER_KEY", "JWT_SECRET"):
+        with pytest.raises(ValidationError):
+            Settings(**{field: "  "})

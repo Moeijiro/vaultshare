@@ -34,9 +34,9 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.deps import get_current_user, get_current_user_optional
+from app.api.deps import get_current_user, get_current_user_optional
 from app.core.security import decrypt_payload, encrypt_payload, generate_share_token, hash_token, verify_password
-from app.db.models import AccessLog, Share, User
+from app.models import AccessLog, Share, User
 from app.db.session import get_db
 from app.schemas.share import (
     ShareCreateResponse, ShareCreateText, ShareItemOut, ShareMetadataResponse,

@@ -1,17 +1,8 @@
 import datetime
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, LargeBinary, ForeignKey, Index
 from sqlalchemy.orm import relationship
-from app.db.session import Base
+from app.db.base import Base
 
-class User(Base):
-    __tablename__ = "users"
-
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String(255), unique=True, index=True, nullable=False)
-    hashed_password = Column(String(255), nullable=False)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-
-    shares = relationship("Share", back_populates="owner", cascade="all, delete-orphan")
 
 class Share(Base):
     __tablename__ = "shares"
@@ -52,6 +43,7 @@ class Share(Base):
     __table_args__ = (
         Index("ix_shares_lookup", "token_hash", "is_consumed", "is_revoked"),
     )
+
 
 class AccessLog(Base):
     __tablename__ = "access_logs"
