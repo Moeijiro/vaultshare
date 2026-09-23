@@ -3,10 +3,20 @@
 [![CI](https://github.com/Moeijiro/vaultshare/actions/workflows/ci.yml/badge.svg)](https://github.com/Moeijiro/vaultshare/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688.svg?logo=fastapi)](https://fastapi.tiangolo.com/)
-[![Next.js](https://img.shields.io/badge/Frontend-Next.js%2014-black.svg?logo=next.js)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Frontend-Next.js%2016-black.svg?logo=next.js)](https://nextjs.org/)
 [![Cryptography](https://img.shields.io/badge/Security-AES--256--GCM-red.svg)](https://cryptography.io/)
 
-> **VaultShare** is a security-conscious, open-source web application for sharing ephemeral text secrets and encrypted small files using expiring, one-time ("burn-after-reading") links, optional Argon2id/PBKDF2-derived password protection, and authenticated AES-256-GCM envelope encryption.
+> **VaultShare** is a security-conscious, open-source web application for sharing ephemeral text secrets and encrypted small files using expiring, one-time ("burn-after-reading") links, optional passphrase protection (PBKDF2-derived, verified by the AES-GCM tag — no passphrase hash is stored), and authenticated AES-256-GCM envelope encryption.
+
+![Recipient view](docs/screenshots/reveal.png)
+
+| New secret | My links |
+| --- | --- |
+| ![Create](docs/screenshots/create.png) | ![Dashboard](docs/screenshots/dashboard.png) |
+| **Security model (served by the API)** | **Landing page** |
+| ![Security](docs/screenshots/security.png) | ![Landing](docs/screenshots/landing.png) |
+
+<p align="center"><img src="docs/screenshots/mobile-reveal.png" width="260" alt="Recipient view on a phone" /></p>
 
 ---
 
@@ -31,7 +41,7 @@
 |    Cryptographic Core     |  |   Database & State Store    |  | File Vault (Encrypted) |
 | • AES-256-GCM AEAD Cipher |  | • SQLite (Dev) / PostgreSQL |  | • Safe sanitized paths |
 | • High-entropy 256-bit PRNG| | • Token Hashing (SHA-256)   |  | • Chunked AES-GCM enc  |
-| • PBKDF2/Argon2 KDF       |  | • View tracking & locks     |  | • Instant shredding    |
+| • PBKDF2-HMAC-SHA256 KDF  |  | • View tracking & locks     |  | • Instant shredding    |
 +---------------------------+  +-----------------------------+  +------------------------+
 ```
 
@@ -88,6 +98,16 @@
 5. **Memory Residue**: Plaintext secrets are handled as transient memory buffers and never written to temporary logs, analytics, or tracebacks.
 6. **Malicious File Execution**: Uploaded files are verified against a strict size ceiling (max 10MB), stored outside the public web root using randomized UUIDs, served with `Content-Disposition: attachment` and `X-Content-Type-Options: nosniff`.
 
+### Hardening in this version
+
+- **One-time really means once.** A view is claimed with a single conditional `UPDATE … WHERE view_count < max_views` before any plaintext leaves the server, so parallel requests can't both read a burn-after-reading secret (covered by a concurrency test).
+- **No crackable passphrase hash.** The passphrase is part of the AES-GCM key; a wrong one fails the authentication tag. The previous stored PBKDF2 hash allowed offline brute force of weak passphrases from a database copy alone.
+- **The fifth wrong passphrase destroys the secret immediately.**
+- **Files are served as `application/octet-stream`** with a sanitised, RFC 5987-encoded `Content-Disposition`; uploads are size-checked while streaming.
+- **Accounts:** bcrypt used directly (passlib 1.7 cannot load bcrypt ≥ 4.1, which broke sign-up), case-insensitive emails, constant-time login for unknown emails, per-IP rate limiting, and an HttpOnly `SameSite=Lax` session cookie instead of a token in `localStorage`.
+- **Owners revoke from the dashboard by id** — the raw token is never stored, so revoke-by-token alone wasn't usable there.
+- **Production guard:** the API refuses to start with `ENV=production` and the development `VAULT_MASTER_KEY` / `JWT_SECRET`.
+
 ### Limitations & Transparent Non-Claims
 * **No Independent Security Audit**: VaultShare has not undergone an external third-party security audit. It is designed following modern cryptographic and defensive engineering principles for portfolio and team utility.
 * **Server-Assisted Model (Trust in Application Server)**: In the current architecture, encryption keys are derived and applied server-side. Users who require zero-knowledge end-to-end client-side encryption should use client-side GPG or WebCrypto before pasting.
@@ -127,8 +147,8 @@
 
 ## Tech Stack
 
-- **Backend**: Python 3.11+, FastAPI, SQLAlchemy 2.0, Pydantic v2, `cryptography`, `passlib`, `pytest`
-- **Frontend**: Next.js 14, React 18, TypeScript, Tailwind CSS, Lucide Icons
+- **Backend**: Python 3.12+, FastAPI, SQLAlchemy 2.0, Pydantic v2, `cryptography`, `passlib`, `pytest`
+- **Frontend**: Next.js 16, React 19, TypeScript, Tailwind CSS 4, shadcn/ui (Radix), Lucide icons, Geist
 - **Storage**: SQLite (Local Dev) / PostgreSQL (Production ready)
 - **Tooling**: Docker, Docker Compose, GitHub Actions CI
 
@@ -159,7 +179,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Visit `http://localhost:3000` to access the VaultShare interface.
+Visit `http://localhost:3000`, press **Share a secret**, and open the link it gives you in a private window. Share links live at `/s/<token>` (the old frontend routed `/share/<token>`, so every issued link 404'd).
 
 ---
 
