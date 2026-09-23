@@ -59,3 +59,10 @@ async def client():
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
+
+
+@pytest.fixture(autouse=True)
+def _reset_rate_limits():
+    from app.core.auth import reset_rate_limits
+    reset_rate_limits()
+    yield
