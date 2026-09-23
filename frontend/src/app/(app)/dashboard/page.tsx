@@ -1,193 +1,84 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { Lock, LayoutDashboard, Trash2, CheckCircle2, XCircle, Clock, Shield, PlusCircle, LogOut } from "lucide-react";
-import { api, ShareItem } from "@/lib/api";
+import { toast } from "sonner";
+import { Ban, CheckCircle2, Clock, FileLock, FileText, FolderLock, LogIn, Plus, Timer } from "lucide-react";
+import { useSession } from "@/components/session";
+import { Empty, ErrorState, PageLoading, PageTitle, Panel, Pill, RowsLoading, Stat, Table, Td, Th } from "@/components/kit/ui";
+import { Button } from "@/components/ui/button";
+import { useApi } from "@/hooks/use-api";
+import { api } from "@/lib/api";
+import { STATUS, until, when } from "@/lib/format";
 
-export default function DashboardPage() {
-  const [token, setToken] = useState<string | null>(null);
-  const [shares, setShares] = useState<ShareItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const savedToken = localStorage.getItem("vault_token");
-    setToken(savedToken);
-    if (!savedToken) {
-      setLoading(false);
-      return;
-    }
-    loadShares(savedToken);
-  }, []);
-
-  async function loadShares(authToken: string) {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await api.getMyShares(authToken);
-      setShares(data);
-    } catch (err: any) {
-      setError("Please log in to manage your vault history.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleRevoke(shareId: number) {
-    if (!token) return;
-    if (!confirm("Are you sure you want to revoke and shred this secret immediately?")) return;
-    
-    // In our API we can revoke by token or id; let's refresh shares
-    try {
-      // optimistic filter or reload
-      await loadShares(token);
-    } catch (err) {}
-  }
-
-  function handleLogout() {
-    localStorage.removeItem("vault_token");
-    setToken(null);
-    setShares([]);
-  }
-
-  if (!token) {
+export default function MyLinksPage() {
+  const { user, ready } = useSession();
+  if (!ready) return <PageLoading />;
+  if (!user) {
     return (
-      <div className="max-w-md mx-auto text-center py-16 space-y-6">
-        <div className="w-14 h-14 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mx-auto text-emerald-400">
-          <Lock className="w-7 h-7" />
+      <>
+        <PageTitle title="My links" />
+        <div className="rounded-xl border bg-card">
+          <Empty icon={LogIn} title="Sign in to see your links" description="Links you create while signed in are listed here, with their status — and you can revoke them."
+            action={<div className="flex gap-2"><Button asChild><Link href="/login">Sign in</Link></Button><Button asChild variant="outline"><Link href="/register">Create an account</Link></Button></div>} />
         </div>
-        <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-white">Owner Vault Dashboard</h1>
-          <p className="text-xs text-zinc-400 max-w-sm mx-auto leading-relaxed">
-            Create an optional authenticated account to track, monitor, and revoke your active shares. Secrets themselves are never redisplayed.
-          </p>
-        </div>
-        <div className="flex justify-center gap-3 pt-2">
-          <Link
-            href="/login"
-            className="px-5 py-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs transition"
-          >
-            Log In
-          </Link>
-          <Link
-            href="/register"
-            className="px-5 py-2.5 rounded-lg border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-medium transition"
-          >
-            Register
-          </Link>
-        </div>
-      </div>
+      </>
     );
   }
+  return <Links />;
+}
 
+function Links() {
+  const data = useApi(() => Promise.all([api.stats(), api.mine()]), "mine");
+  const [busy, setBusy] = useState<number | null>(null);
+
+  async function revoke(id: number) {
+    if (!confirm("Revoke this link? The secret is destroyed immediately.")) return;
+    setBusy(id);
+    try {
+      await api.revokeMine(id);
+      toast.success("Link revoked and secret destroyed");
+      data.reload();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  if (data.error) return <ErrorState message={data.error} onRetry={data.reload} />;
+  const [stats, shares] = data.data ?? [null, null];
   return (
-    <div className="space-y-8 py-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800/80 pb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <LayoutDashboard className="w-5 h-5 text-emerald-400" />
-            Vault Dashboard
-          </h1>
-          <p className="text-xs text-zinc-400">
-            Monitor active dispatches and view usage status. Plaintext content is permanently zeroed after generation.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/create"
-            className="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold flex items-center gap-1.5 transition"
-          >
-            <PlusCircle className="w-4 h-4" />
-            New Secret
-          </Link>
-          <button
-            onClick={handleLogout}
-            className="px-3 py-2 rounded-lg border border-zinc-800 hover:border-zinc-700 bg-zinc-900 text-zinc-400 hover:text-white text-xs flex items-center gap-1.5 transition"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            Sign Out
-          </button>
-        </div>
+    <>
+      <PageTitle title="My links" description="Only metadata is listed — the secrets themselves can't be shown again, even to you." actions={<Button asChild><Link href="/create"><Plus />New secret</Link></Button>} />
+      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Stat label="Created" icon={FolderLock} value={stats?.total_created ?? "—"} />
+        <Stat label="Active" icon={Timer} value={stats?.active_count ?? "—"} tone={stats?.active_count ? "ok" : undefined} />
+        <Stat label="Opened or revoked" icon={CheckCircle2} value={stats?.consumed_count ?? "—"} />
+        <Stat label="Expired unopened" icon={Clock} value={stats?.expired_count ?? "—"} tone={stats?.expired_count ? "warn" : undefined} />
       </div>
-
-      {loading ? (
-        <div className="text-center py-12 text-xs text-zinc-500 font-mono">Loading vault records...</div>
-      ) : shares.length === 0 ? (
-        <div className="text-center py-16 border border-dashed border-zinc-800 rounded-2xl p-8 space-y-3">
-          <Shield className="w-10 h-10 text-zinc-600 mx-auto" />
-          <h3 className="text-sm font-semibold text-zinc-300">No active secrets found</h3>
-          <p className="text-xs text-zinc-500 max-w-sm mx-auto">
-            You haven&apos;t created any shares under this account yet, or previous secrets have burned.
-          </p>
-        </div>
-      ) : (
-        <div className="border border-zinc-800 rounded-2xl bg-zinc-900/40 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-zinc-800 bg-zinc-950 text-zinc-400 font-mono uppercase text-[10px]">
-                <tr>
-                  <th className="py-3 px-4">Identifier</th>
-                  <th className="py-3 px-4">Type</th>
-                  <th className="py-3 px-4">Views</th>
-                  <th className="py-3 px-4">Expires</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-800/60">
-                {shares.map((s) => (
-                  <tr key={s.id} className="hover:bg-zinc-900/60 transition">
-                    <td className="py-3 px-4 font-mono text-zinc-300">
-                      {s.filename ? s.filename : `Secret #${s.token_hash_prefix}`}
-                    </td>
-                    <td className="py-3 px-4 capitalize text-zinc-400">{s.share_type}</td>
-                    <td className="py-3 px-4 font-mono">
-                      <span className="text-emerald-400 font-bold">{s.view_count}</span>
-                      <span className="text-zinc-500"> / {s.max_views}</span>
-                    </td>
-                    <td className="py-3 px-4 text-zinc-400 font-mono">
-                      {s.expires_at.replace("T", " ").substring(0, 16)} UTC
-                    </td>
-                    <td className="py-3 px-4">
-                      {s.status === "active" && (
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-[10px]">
-                          Active
-                        </span>
-                      )}
-                      {s.status === "consumed" && (
-                        <span className="px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-400 font-mono text-[10px]">
-                          Burned
-                        </span>
-                      )}
-                      {s.status === "expired" && (
-                        <span className="px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 font-mono text-[10px]">
-                          Expired
-                        </span>
-                      )}
-                      {s.status === "revoked" && (
-                        <span className="px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 font-mono text-[10px]">
-                          Revoked
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-3 px-4 text-right">
-                      {s.status === "active" && (
-                        <button
-                          onClick={() => handleRevoke(s.id)}
-                          className="px-2.5 py-1 rounded bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/50 text-rose-300 text-[11px] font-medium transition"
-                        >
-                          Revoke & Shred
-                        </button>
-                      )}
-                    </td>
+      <Panel bodyClassName="p-0">
+        {!shares ? <RowsLoading /> : shares.length === 0 ? <Empty icon={FolderLock} title="No links yet" description="Create a secret while signed in and it will show up here." /> : (
+          <Table>
+            <thead><tr><Th>Secret</Th><Th>Status</Th><Th>Views</Th><Th>Created</Th><Th>Expires</Th><Th className="text-right" /></tr></thead>
+            <tbody>
+              {shares.map((s) => {
+                const st = STATUS[s.status];
+                return (
+                  <tr key={s.id}>
+                    <Td><span className="flex items-center gap-2">{s.share_type === "file" ? <FileLock className="size-4 text-primary" /> : <FileText className="size-4 text-primary" />}<span className="font-medium">{s.filename ?? "Text secret"}</span><span className="font-mono text-xs text-muted-foreground">#{s.token_hash_prefix}</span></span></Td>
+                    <Td><Pill tone={st.tone}>{st.label}</Pill></Td>
+                    <Td className="tabular">{s.view_count} / {s.max_views}</Td>
+                    <Td className="text-xs whitespace-nowrap text-muted-foreground">{when(s.created_at)}</Td>
+                    <Td className="text-xs whitespace-nowrap text-muted-foreground">{s.status === "active" ? until(s.expires_at) : "—"}</Td>
+                    <Td className="text-right">{s.status === "active" ? <Button variant="ghost" size="sm" disabled={busy === s.id} onClick={() => revoke(s.id)}><Ban />Revoke</Button> : null}</Td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-    </div>
+                );
+              })}
+            </tbody>
+          </Table>
+        )}
+      </Panel>
+    </>
   );
 }

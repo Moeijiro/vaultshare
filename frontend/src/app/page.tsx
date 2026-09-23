@@ -1,175 +1,81 @@
+"use client";
+
 import Link from "next/link";
-import { Lock, Shield, Flame, Clock, Key, FileCheck, ArrowRight, EyeOff, ServerOff, DatabaseZap } from "lucide-react";
+import { ArrowRight, Clock, Eye, FileLock, Flame, KeyRound, Link2, Lock, ShieldCheck, Trash2, Zap } from "lucide-react";
+import { Logo } from "@/components/brand";
+import { CtaBand, FeatureCard, Hero, HeroButton, HeroCard, InfoCard, Section, SiteFooter, SiteNav } from "@/components/kit/site";
+import { Button } from "@/components/ui/button";
 
-export default function LandingPage() {
+function Preview() {
   return (
-    <div className="space-y-24 py-6">
-      {/* Hero Section */}
-      <section className="text-center space-y-6 max-w-3xl mx-auto pt-8">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-xs font-mono">
-          <Shield className="w-3.5 h-3.5" />
-          <span>Zero-Plaintext Storage • Authenticated AES-256-GCM</span>
-        </div>
-        
-        <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight">
-          Secure, self-destructing <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">
-            secrets & files.
-          </span>
-        </h1>
-        
-        <p className="text-lg text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-          Share API keys, database credentials, environment variables, and sensitive config files via one-time encrypted links that burn upon reading.
-        </p>
-
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-          <Link
-            href="/create"
-            className="w-full sm:w-auto px-6 py-3 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold flex items-center justify-center gap-2 transition glow-emerald"
-          >
-            Create a Secret Link
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-          <Link
-            href="/security"
-            className="w-full sm:w-auto px-6 py-3 rounded-lg border border-zinc-800 hover:border-zinc-700 bg-zinc-900/50 hover:bg-zinc-900 text-zinc-300 font-medium transition"
-          >
-            Read Security Spec
-          </Link>
-        </div>
-      </section>
-
-      {/* How It Works */}
-      <section className="space-y-10">
-        <div className="text-center space-y-2">
-          <h2 className="text-2xl font-bold tracking-tight text-white">How VaultShare Works</h2>
-          <p className="text-sm text-zinc-400">An uncompromising ephemeral lifecycle designed for modern security teams.</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="p-5 rounded-xl border border-zinc-800/80 bg-zinc-900/40 space-y-3">
-            <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold">1</div>
-            <h3 className="font-semibold text-white">Input & Encrypt</h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              Your secret text or small file is encrypted using AES-256-GCM with a unique 96-bit nonce and 128-bit salt before persistence.
-            </p>
-          </div>
-
-          <div className="p-5 rounded-xl border border-zinc-800/80 bg-zinc-900/40 space-y-3">
-            <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold">2</div>
-            <h3 className="font-semibold text-white">High-Entropy Token</h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              A 256-bit cryptographically random token is generated. Only the SHA-256 hash of the token is saved in the database index.
-            </p>
-          </div>
-
-          <div className="p-5 rounded-xl border border-zinc-800/80 bg-zinc-900/40 space-y-3">
-            <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold">3</div>
-            <h3 className="font-semibold text-white">Explicit Reveal</h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              Link bots & chat pre-fetchers cannot burn the link. The recipient must explicitly provide the passphrase and click reveal.
-            </p>
-          </div>
-
-          <div className="p-5 rounded-xl border border-zinc-800/80 bg-zinc-900/40 space-y-3">
-            <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold">4</div>
-            <h3 className="font-semibold text-white">Instant Shredding</h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              Once maximum views are reached or the timer elapses, ciphertext is zeroed and purged. Subsequent visits yield generic 404s.
-            </p>
+    <HeroCard>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div className="space-y-3">
+          <p className="text-sm font-semibold">You send</p>
+          <pre className="rounded-lg bg-code p-3.5 font-mono text-[12px] leading-relaxed text-code-foreground">STRIPE_SECRET_KEY=sk_live_••••••••••••
+DB_PASSWORD=••••••••••••</pre>
+          <div className="flex flex-wrap gap-2 text-xs">
+            {[[Clock, "Expires in 24 h"], [Flame, "1 view"], [KeyRound, "Passphrase"]].map(([Icon, label]) => {
+              const I = Icon as typeof Clock;
+              return <span key={label as string} className="inline-flex items-center gap-1 rounded-md border bg-muted/50 px-2 py-1 text-muted-foreground"><I className="size-3.5" />{label as string}</span>;
+            })}
           </div>
         </div>
-      </section>
-
-      {/* Security Principles */}
-      <section className="p-8 rounded-2xl border border-zinc-800 bg-zinc-900/20 space-y-8">
-        <div className="max-w-2xl">
-          <h2 className="text-2xl font-bold text-white tracking-tight">Security Design Principles</h2>
-          <p className="text-sm text-zinc-400 mt-1">Defensive engineering choices built directly into the core engine.</p>
+        <div className="space-y-3">
+          <p className="text-sm font-semibold">They receive</p>
+          <div className="flex items-center gap-2 rounded-lg border bg-card px-3 py-2.5 font-mono text-xs text-muted-foreground"><Link2 className="size-3.5 text-primary" />vaultshare.app/s/Xf3k9…QpL0</div>
+          <div className="rounded-lg border border-dashed px-3 py-2.5 text-sm text-muted-foreground"><Flame className="mr-1.5 inline size-4 text-fail" />After it&apos;s opened once, the ciphertext is overwritten and deleted. The link just says &ldquo;no longer works&rdquo;.</div>
         </div>
+      </div>
+    </HeroCard>
+  );
+}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="flex gap-4">
-            <div className="p-2.5 h-fit rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-              <Flame className="w-5 h-5" />
-            </div>
-            <div className="space-y-1">
-              <h4 className="font-medium text-white text-sm">True Burn-After-Reading</h4>
-              <p className="text-xs text-zinc-400 leading-relaxed">
-                When views expire, payload buffers are overwritten with null bytes prior to filesystem unlinking and database removal.
-              </p>
-            </div>
+export default function Landing() {
+  return (
+    <>
+      <SiteNav brand={<Logo />} links={[["#how", "How it works"], ["#security", "Security"], ["#use-cases", "Use cases"]]}
+        actions={<><Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex"><Link href="/login">Sign in</Link></Button><Button asChild size="sm"><Link href="/create">Share a secret</Link></Button></>} />
+      <main id="main">
+        <Hero eyebrow="One-time secret links"
+          title="Stop pasting passwords into chat."
+          description="VaultShare turns a password, API key or small file into an encrypted link that expires and destroys itself after it's read. Add a passphrase for a second channel."
+          actions={<><HeroButton href="/create">Share a secret<ArrowRight data-icon="inline-end" /></HeroButton><HeroButton href="#security" variant="outline">How it&apos;s protected</HeroButton></>}
+          note="No account needed. Nothing readable is ever stored."
+          visual={<Preview />} />
+
+        <Section id="how" eyebrow="How it works" title="Three steps, then it's gone">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <FeatureCard icon={Lock} title="Encrypt" index={1}>Text or a file up to 10 MB is encrypted with AES-256-GCM before it&apos;s stored.</FeatureCard>
+            <FeatureCard icon={Link2} title="Share the link" index={2} delay={0.05}>A 256-bit random token; the database only keeps its hash.</FeatureCard>
+            <FeatureCard icon={Eye} title="Open once" index={3} delay={0.1}>Link previews in chat apps can&apos;t trigger it — the recipient presses Reveal.</FeatureCard>
+            <FeatureCard icon={Trash2} title="Shredded" index={4} delay={0.15}>After the last view, on expiry or on revoke, the ciphertext is overwritten and deleted.</FeatureCard>
           </div>
+        </Section>
 
-          <div className="flex gap-4">
-            <div className="p-2.5 h-fit rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-              <Key className="w-5 h-5" />
-            </div>
-            <div className="space-y-1">
-              <h4 className="font-medium text-white text-sm">PBKDF2-HMAC-SHA256</h4>
-              <p className="text-xs text-zinc-400 leading-relaxed">
-                100,000 iterations for password derivation and constant-time digest comparison to neutralize timing attacks.
-              </p>
-            </div>
+        <Section id="security" eyebrow="Security" title="Built to fail closed" description="The full threat model — including what VaultShare can't protect against — is on the Security page, served by the API itself." tinted>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <FeatureCard icon={KeyRound} title="Passphrases aren't stored">The passphrase is part of the key; a wrong one fails the GCM tag. No hash to crack offline.</FeatureCard>
+            <FeatureCard icon={Flame} title="Really one-time" delay={0.05}>Views are claimed atomically, so two simultaneous opens can&apos;t both see a one-view secret.</FeatureCard>
+            <FeatureCard icon={ShieldCheck} title="Five guesses, then gone" delay={0.1}>The fifth wrong passphrase destroys the secret on the spot.</FeatureCard>
+            <FeatureCard icon={FileLock} title="Files stay files">Always downloaded as an attachment with a cleaned name — never rendered in the browser.</FeatureCard>
+            <FeatureCard icon={Lock} title="HttpOnly sessions" delay={0.05}>Accounts use a cookie page scripts can&apos;t read; login is rate-limited.</FeatureCard>
+            <FeatureCard icon={Zap} title="Safe defaults" delay={0.1}>The server refuses to start in production with the development keys.</FeatureCard>
           </div>
+        </Section>
 
-          <div className="flex gap-4">
-            <div className="p-2.5 h-fit rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-              <EyeOff className="w-5 h-5" />
-            </div>
-            <div className="space-y-1">
-              <h4 className="font-medium text-white text-sm">Creator Blindness</h4>
-              <p className="text-xs text-zinc-400 leading-relaxed">
-                Senders cannot re-inspect secrets after creation. Even authenticated account dashboards only display metadata and revoke controls.
-              </p>
-            </div>
+        <Section id="use-cases" eyebrow="Use cases" title="For every secret that shouldn't live in a chat log" last>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <InfoCard title="Client handovers">Hosting logins and API keys for a client, gone once they&apos;ve copied them.</InfoCard>
+            <InfoCard title="Onboarding" delay={0.05}>First-day passwords and VPN configs without an email trail.</InfoCard>
+            <InfoCard title="Support teams">Ask a customer for a credential without it staying in the ticket.</InfoCard>
+            <InfoCard title="Freelancers" delay={0.05}>Receive access from clients through a link that can&apos;t be forwarded twice.</InfoCard>
           </div>
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section className="space-y-6 max-w-3xl mx-auto">
-        <h2 className="text-2xl font-bold tracking-tight text-white text-center">Frequently Asked Questions</h2>
-        
-        <div className="space-y-4">
-          <div className="p-5 rounded-lg border border-zinc-800 bg-zinc-900/30 space-y-2">
-            <h3 className="font-medium text-white text-sm">Can I recover a secret if my recipient forgot the password?</h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              No. By design, passphrases are not stored anywhere and incorrect attempts lead to shredding after 5 failures. You must create a new share link.
-            </p>
-          </div>
-
-          <div className="p-5 rounded-lg border border-zinc-800 bg-zinc-900/30 space-y-2">
-            <h3 className="font-medium text-white text-sm">Will URL previewers in Slack or Microsoft Teams consume the one-time link?</h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              No. Link crawlers only perform HTTP GET requests to inspect metadata. Revealing a secret requires a dedicated POST transaction with explicit user confirmation.
-            </p>
-          </div>
-
-          <div className="p-5 rounded-lg border border-zinc-800 bg-zinc-900/30 space-y-2">
-            <h3 className="font-medium text-white text-sm">Is VaultShare independently audited?</h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              No. VaultShare has not undergone a formal third-party security audit. It employs vetted standard cryptographic primitives (AES-GCM, PBKDF2). Review our technical security page for full threat-model transparency.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="text-center py-12 border border-zinc-800/80 rounded-2xl bg-gradient-to-b from-zinc-900/50 to-zinc-950 p-8 space-y-4">
-        <h2 className="text-3xl font-extrabold text-white">Ready to share a confidential credential?</h2>
-        <p className="text-zinc-400 text-sm max-w-lg mx-auto">
-          No sign-up required for anonymous one-time shares. Free, fast, and cryptographically sound.
-        </p>
-        <div className="pt-2">
-          <Link
-            href="/create"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold transition glow-emerald"
-          >
-            Create Encrypted Share
-          </Link>
-        </div>
-      </section>
-    </div>
+          <CtaBand title="Send your first one-time link" description="It takes ten seconds and nothing readable is kept."
+            action={<Button asChild size="lg" variant="secondary" className="h-11 px-5"><Link href="/create">Share a secret<ArrowRight data-icon="inline-end" /></Link></Button>} />
+        </Section>
+      </main>
+      <SiteFooter brand={<Logo />} right={<><Lock className="size-3.5" />AES-256-GCM · shredded after reading</>} />
+    </>
   );
 }

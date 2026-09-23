@@ -1,109 +1,53 @@
-import { Shield, Lock, Key, Clock, AlertOctagon, Terminal, Flame, Database } from "lucide-react";
+"use client";
 
-export default function SecuritySpecPage() {
+import { AlertTriangle, KeyRound, Lock, ShieldCheck, Trash2, Hash } from "lucide-react";
+import { ErrorState, PageLoading, PageTitle, Panel } from "@/components/kit/ui";
+import { useApi } from "@/hooks/use-api";
+import { api } from "@/lib/api";
+
+export default function SecurityPage() {
+  const spec = useApi(() => api.spec(), "spec");
+  if (spec.error) return <ErrorState message={spec.error} onRetry={spec.reload} />;
+  if (!spec.data) return <PageLoading />;
+  const s = spec.data;
+  const facts = [
+    { icon: Lock, label: "Cipher", value: s.cipher_suite },
+    { icon: KeyRound, label: "Key derivation", value: s.key_derivation },
+    { icon: Hash, label: "Link tokens", value: s.token_entropy },
+    { icon: ShieldCheck, label: "Storage", value: s.storage_model },
+    { icon: Trash2, label: "Shredding", value: s.shredding_policy },
+  ];
   return (
-    <div className="max-w-3xl mx-auto space-y-12 py-6">
-      <div className="space-y-3">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-xs font-mono">
-          <Shield className="w-3.5 h-3.5" />
-          <span>Technical Whitepaper & Cryptographic Specification</span>
-        </div>
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-          Security Architecture & Threat Model
-        </h1>
-        <p className="text-zinc-400 text-sm leading-relaxed">
-          VaultShare prioritizes transparent, defensible cryptographic engineering. This document describes the cipher primitives, key derivations, memory practices, and explicit architectural limitations.
-        </p>
+    <>
+      <PageTitle title="Security model" description="Served by the API itself, so it describes the code that is actually running." />
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {facts.map((f) => (
+          <div key={f.label} className="rounded-xl border bg-card p-5">
+            <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground"><f.icon className="size-3.5" />{f.label}</p>
+            <p className="mt-2 text-sm">{f.value}</p>
+          </div>
+        ))}
       </div>
-
-      {/* Cryptographic Primitives */}
-      <section className="space-y-4">
-        <h2 className="text-xl font-bold text-white flex items-center gap-2">
-          <Lock className="w-5 h-5 text-emerald-400" />
-          1. Cryptographic Primitives & Storage
-        </h2>
-        <div className="p-5 rounded-xl border border-zinc-800 bg-zinc-900/40 text-xs text-zinc-300 space-y-3 leading-relaxed">
-          <p>
-            <strong>Envelope Encryption with AES-256-GCM:</strong> Every secret payload (both text and files) is encrypted using Authenticated Encryption with Associated Data (AEAD) provided by the audited Python <code className="text-emerald-400">cryptography</code> library.
-          </p>
-          <ul className="list-disc pl-5 space-y-1.5 text-zinc-400 font-mono text-[11px]">
-            <li><strong>Cipher:</strong> AES-256 in Galois/Counter Mode (GCM).</li>
-            <li><strong>Nonce/IV:</strong> 96-bit cryptographically secure pseudorandom value generated per secret. Nonces are never reused.</li>
-            <li><strong>Authentication Tag:</strong> 128-bit tag ensuring ciphertext integrity; tampering causes immediate decryption abort.</li>
-            <li><strong>Salt:</strong> 128-bit unique salt per secret.</li>
-          </ul>
-        </div>
-      </section>
-
-      {/* Key Derivation & Passwords */}
-      <section className="space-y-4">
-        <h2 className="text-xl font-bold text-white flex items-center gap-2">
-          <Key className="w-5 h-5 text-emerald-400" />
-          2. Key Derivation & Passphrase Defense
-        </h2>
-        <div className="p-5 rounded-xl border border-zinc-800 bg-zinc-900/40 text-xs text-zinc-300 space-y-3 leading-relaxed">
-          <p>
-            When an optional passphrase is set by the sender, the effective encryption key is derived using <strong>PBKDF2-HMAC-SHA256</strong> with 100,000 rounds combining the server master key and user passphrase.
-          </p>
-          <p>
-            <strong>Constant-Time Verification:</strong> Passphrase checks use constant-time byte comparison (<code className="text-emerald-400">hmac.compare_digest</code>) to neutralize timing-side-channel attacks.
-          </p>
-          <p>
-            <strong>Attempt Lockout:</strong> A strict ceiling of 5 incorrect attempts is enforced per secret. Reaching 5 failures marks the secret consumed and executes an immediate secure memory/disk shredding routine.
-          </p>
-        </div>
-      </section>
-
-      {/* Token Generation */}
-      <section className="space-y-4">
-        <h2 className="text-xl font-bold text-white flex items-center gap-2">
-          <Terminal className="w-5 h-5 text-emerald-400" />
-          3. Token Generation & URL Security
-        </h2>
-        <div className="p-5 rounded-xl border border-zinc-800 bg-zinc-900/40 text-xs text-zinc-300 space-y-3 leading-relaxed">
-          <p>
-            Public URLs use 256-bit entropy tokens produced by <code className="text-emerald-400">secrets.token_urlsafe(32)</code>.
-          </p>
-          <p>
-            <strong>Token Hashing in Persistence:</strong> Database lookups match against the <strong>SHA-256 hash</strong> of the token. An attacker with read access to the database cannot immediately open links without finding preimage collisions. Sequential IDs are never exposed externally.
-          </p>
-        </div>
-      </section>
-
-      {/* Burn-after-reading Lifecycle */}
-      <section className="space-y-4">
-        <h2 className="text-xl font-bold text-white flex items-center gap-2">
-          <Flame className="w-5 h-5 text-emerald-400" />
-          4. Burn-After-Reading & Ephemeral Lifecycle
-        </h2>
-        <div className="p-5 rounded-xl border border-zinc-800 bg-zinc-900/40 text-xs text-zinc-300 space-y-3 leading-relaxed">
-          <p>
-            <strong>Crawlers & Pre-fetchers Protection:</strong> Chat preview bots (Slack, Discord, Apple iMessage, Teams) make HTTP GET requests. VaultShare&apos;s <code className="text-emerald-400">GET /shares/&#123;token&#125;/meta</code> route returns only metadata (format, expiry, password requirement). It never decrypts or consumes views.
-          </p>
-          <p>
-            <strong>Immediate Shredding:</strong> Once maximum views are consumed or expiration elapses, file assets are overwritten with zeroes prior to deletion, and DB payload columns are cleared.
-          </p>
-        </div>
-      </section>
-
-      {/* Transparent Limitations */}
-      <section className="space-y-4">
-        <h2 className="text-xl font-bold text-amber-400 flex items-center gap-2">
-          <AlertOctagon className="w-5 h-5 text-amber-400" />
-          5. Transparent Threat Model Limitations
-        </h2>
-        <div className="p-5 rounded-xl border border-amber-500/20 bg-amber-500/5 text-xs text-zinc-300 space-y-3 leading-relaxed">
-          <p>
-            <strong>No Third-Party Security Audit:</strong> VaultShare has not been independently security-audited. It is engineered as a portfolio-grade security application implementing established cryptographic standards.
-          </p>
-          <p>
-            <strong>Server-Assisted Cryptography:</strong> Decryption occurs via FastAPI backend workers. Compromise of the server host memory could expose secrets during transit or active decryption calls. Users requiring end-to-end zero-trust client encryption should encrypt client-side prior to sharing.
-          </p>
-          <p>
-            <strong>Recipient Exfiltration:</strong> Cryptographic enforcement ceases once data is delivered to the recipient browser. VaultShare cannot prevent recipients from saving files or taking screenshots.
-          </p>
-        </div>
-      </section>
-    </div>
+      <Panel title="Threats and defences" className="mt-5">
+        <ul className="divide-y">
+          {s.threat_model_mitigations.map((t) => (
+            <li key={t.threat} className="grid grid-cols-1 gap-1 px-5 py-3.5 md:grid-cols-[240px_minmax(0,1fr)] md:gap-6">
+              <span className="text-sm font-medium">{t.threat}</span>
+              <span className="text-sm text-muted-foreground">{t.defense}</span>
+            </li>
+          ))}
+        </ul>
+      </Panel>
+      <Panel title="Known limitations" description="What VaultShare doesn't protect against." className="mt-5">
+        <ul className="divide-y">
+          {s.known_limitations.map((l) => (
+            <li key={l.limitation} className="flex gap-3 px-5 py-3.5">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warn" />
+              <span><span className="block text-sm font-medium">{l.limitation}</span><span className="text-sm text-muted-foreground">{l.detail}</span></span>
+            </li>
+          ))}
+        </ul>
+      </Panel>
+    </>
   );
 }
