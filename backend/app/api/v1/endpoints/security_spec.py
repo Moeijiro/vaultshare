@@ -28,7 +28,7 @@ async def get_security_spec():
         threat_model_mitigations=[
             {
                 "threat": "Database compromise",
-                "defense": "All secret payloads are AES-256-GCM encrypted. Passwords are salted and hashed with PBKDF2 (100k rounds). Database leak reveals zero plaintext."
+                "defense": "All secret payloads are AES-256-GCM encrypted under a key derived from the server master key. No hash of share passphrases is stored — a wrong passphrase fails the GCM tag — so a database leak gives nothing to brute-force offline without the master key."
             },
             {
                 "threat": "Link crawling / Pre-fetchers (Slack, Discord, Teams)",
@@ -44,7 +44,15 @@ async def get_security_spec():
             },
             {
                 "threat": "Malicious file upload & execution",
-                "defense": "Files are stored outside web root with randomized UUID filenames, encrypted on disk, and served with Content-Disposition: attachment and X-Content-Type-Options: nosniff."
+                "defense": "Files are stored outside web root with randomized UUID filenames, encrypted on disk, size-checked while streaming, and always served as application/octet-stream with a sanitised attachment filename and X-Content-Type-Options: nosniff."
+            },
+            {
+                "threat": "Concurrent reads of a one-time link",
+                "defense": "A view is claimed with a single conditional UPDATE before any plaintext is returned, so parallel requests cannot both read a burn-after-reading secret."
+            },
+            {
+                "threat": "Account enumeration and password guessing",
+                "defense": "Login always runs bcrypt (a dummy hash for unknown emails) and is rate-limited per IP; emails are case-insensitive."
             }
         ],
         known_limitations=[
