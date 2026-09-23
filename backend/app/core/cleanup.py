@@ -2,9 +2,10 @@ import asyncio
 import datetime
 import logging
 from sqlalchemy import select, or_
+from app.core.config import settings
 from app.db.session import AsyncSessionLocal
-from app.db.models import Share
-from app.api.v1.endpoints.shares import shred_file
+from app.models import Share
+from app.api.routes.shares import shred_file
 
 logger = logging.getLogger(__name__)
 
@@ -34,4 +35,4 @@ async def cleanup_expired_shares():
         except Exception as e:
             logger.error(f"Error in background cleanup task: {e}")
         
-        await asyncio.sleep(60)  # Check every 60 seconds
+        await asyncio.sleep(settings.CLEANUP_INTERVAL_SECONDS)

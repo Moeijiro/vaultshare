@@ -1,18 +1,16 @@
 import os
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 from typing import List
 
 DEV_MASTER_KEY = "dGVzdF9tYXN0ZXJfa2V5XzMyX2J5dGVzX2xvbmdfc2VjdXJlIQ=="
 DEV_JWT_SECRET = "vaultshare_jwt_super_secret_key_change_in_production_32bytes"
 
-
 class Settings(BaseSettings):
     PROJECT_NAME: str = "VaultShare"
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api/v1"
     ENV: str = "development"
-    PORT: int = 8000
-    HOST: str = "0.0.0.0"
     
     # CORS
     CORS_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000"
@@ -36,9 +34,16 @@ class Settings(BaseSettings):
     MAX_FILE_SIZE_BYTES: int = 10 * 1024 * 1024  # 10 MB strict limit
     
     # Expiration and Cleanup
-    DEFAULT_EXPIRATION_MINUTES: int = 1440  # 24 hours
     CLEANUP_INTERVAL_SECONDS: int = 300  # 5 minutes
     MAX_PASSWORD_ATTEMPTS: int = 5
+
+    @field_validator("VAULT_MASTER_KEY", "JWT_SECRET")
+    @classmethod
+    def _not_empty(cls, value: str) -> str:
+        # An empty key would silently become a well-known one (sha256 of "") or sign tokens with nothing.
+        if not value.strip():
+            raise ValueError("must not be empty — remove the line to use the development default")
+        return value
 
     def assert_production_ready(self) -> None:
         """Refuse to run in production with the development secrets that ship in this file."""
@@ -54,7 +59,7 @@ class Settings(BaseSettings):
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
 
     class Config:
-        env_file = ".env"
+        env_file = (".env", "../.env")
         extra = "ignore"
 
 settings = Settings()
