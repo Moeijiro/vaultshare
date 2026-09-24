@@ -1,5 +1,7 @@
 # VaultShare
 
+**Portfolio case study:** [moeijiro.github.io/portfolio/projects/vaultshare](https://moeijiro.github.io/portfolio/projects/vaultshare/) · **Live demo:** not hosted — the app runs locally in a few commands (see below).
+
 **Stop pasting passwords into chat.** VaultShare turns a password, API key or small file
 into an encrypted link that expires and destroys itself after it's read. A passphrase
 can be added and sent over a second channel. Recipients see nothing until they press
